@@ -1,25 +1,13 @@
 /*  =========================================================================
-    zbeacon - LAN service announcement and discovery
+    zbeacon - LAN discovery and presence
     
-    -------------------------------------------------------------------------
-    Copyright (c) 1991-2013 iMatix Corporation <www.imatix.com>
-    Copyright other contributors as noted in the AUTHORS file.
-
+    Copyright (c) the Contributors as noted in the AUTHORS file.
     This file is part of CZMQ, the high-level C binding for 0MQ:
     http://czmq.zeromq.org.
 
-    This is free software; you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License as published by the 
-    Free Software Foundation; either version 3 of the License, or (at your 
-    option) any later version.
-
-    This software is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABIL-
-    ITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General 
-    Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License 
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -30,54 +18,61 @@
 extern "C" {
 #endif
 
-//  Opaque class structure
-typedef struct _zbeacon_t zbeacon_t;
-
 //  @interface
-//  Create a new beacon on a certain UDP port
-CZMQ_EXPORT zbeacon_t *
-    zbeacon_new (int port_nbr);
-    
-//  Destroy a beacon
-CZMQ_EXPORT void
-    zbeacon_destroy (zbeacon_t **self_p);
-
-//  Return our own IP address as printable string
-CZMQ_EXPORT char *
-    zbeacon_hostname (zbeacon_t *self);
-
-//  Set broadcast interval in milliseconds (default is 1000 msec)
-CZMQ_EXPORT void
-    zbeacon_set_interval (zbeacon_t *self, int interval);
-
-//  Filter out any beacon that looks exactly like ours
-CZMQ_EXPORT void
-    zbeacon_noecho (zbeacon_t *self);
-
-//  Start broadcasting beacon to peers at the specified interval
-CZMQ_EXPORT void
-    zbeacon_publish (zbeacon_t *self, byte *transmit, size_t size);
-    
-//  Stop broadcasting beacons
-CZMQ_EXPORT void
-    zbeacon_silence (zbeacon_t *self);
-
-//  Start listening to other peers; zero-sized filter means get everything
-CZMQ_EXPORT void
-    zbeacon_subscribe (zbeacon_t *self, byte *filter, size_t size);
-
+//  Create new zbeacon actor instance:
+//
+//      zactor_t *beacon = zactor_new (zbeacon, NULL);
+//
+//  Destroy zbeacon instance:
+//
+//      zactor_destroy (&beacon);
+//
+//  Enable verbose logging of commands and activity:
+//
+//      zstr_send (beacon, "VERBOSE");
+//
+//  Configure beacon to run on specified UDP port, and return the name of
+//  the host, which can be used as endpoint for incoming connections. To
+//  force the beacon to operate on a given interface, set the environment
+//  variable ZSYS_INTERFACE, or call zsys_set_interface() before creating
+//  the beacon. If the system does not support UDP broadcasts (lacking a
+//  workable interface), returns an empty hostname:
+//
+//      //  Pictures: 's' = C string, 'i' = int
+//      zsock_send (beacon, "si", "CONFIGURE", port_number);
+//      char *hostname = zstr_recv (beacon);
+//
+//  Start broadcasting a beacon at a specified interval in msec. The beacon
+//  data can be at most UDP_FRAME_MAX bytes; this constant is defined in
+//  zsys.h to be 255:
+//
+//      //  Pictures: 'b' = byte * data + size_t size
+//      zsock_send (beacon, "sbi", "PUBLISH", data, size, interval);
+//
+//  Stop broadcasting the beacon:
+//
+//      zstr_sendx (beacon, "SILENCE", NULL);
+//
+//  Start listening to beacons from peers. The filter is used to do a prefix
+//  match on received beacons, to remove junk. Note that any received data
+//  that is identical to our broadcast beacon_data is discarded in any case.
+//  If the filter size is zero, we get all peer beacons:
+//  
+//      zsock_send (beacon, "sb", "SUBSCRIBE", filter_data, filter_size);
+//
 //  Stop listening to other peers
+//
+//      zstr_sendx (beacon, "UNSUBSCRIBE", NULL);
+//
+//  Receive next beacon from a peer. Received beacons are always a 2-frame
+//  message containing the ipaddress of the sender, and then the binary
+//  beacon data as published by the sender:
+//
+//      zmsg_t *msg = zmsg_recv (beacon);
+//
+//  This is the zbeacon constructor as a zactor_fn:
 CZMQ_EXPORT void
-    zbeacon_unsubscribe (zbeacon_t *self);
-
-//  Get beacon ZeroMQ socket, for polling or receiving messages
-CZMQ_EXPORT void *
-    zbeacon_socket (zbeacon_t *self);
-
-//  Get beacon pipe, for polling or receiving messages
-//  DEPRECATED
-CZMQ_EXPORT void *
-    zbeacon_pipe (zbeacon_t *self);
+    zbeacon (zsock_t *pipe, void *unused);
 
 //  Self test of this class
 CZMQ_EXPORT void

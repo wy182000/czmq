@@ -1,13 +1,21 @@
 .set GIT=https://github.com/zeromq/czmq
 .sub 0MQ=ØMQ
 
+[![GitHub release](https://img.shields.io/github/release/zeromq/czmq.svg)](https://github.com/zeromq/czmq/releases)
+[![OBS draft](https://img.shields.io/badge/OBS%20master-draft-yellow.svg)](http://software.opensuse.org/download.html?project=home%3Azeromq%3Agit-draft&package=czmq)
+[![OBS stable](https://img.shields.io/badge/OBS%20master-stable-yellow.svg)](http://software.opensuse.org/download.html?project=home%3Azeromq%3Agit-stable&package=czmq)
+<a target="_blank" href="http://webchat.freenode.net?channels=%23zeromq&uio=d4"><img src="https://cloud.githubusercontent.com/assets/493242/14886493/5c660ea2-0d51-11e6-8249-502e6c71e9f2.png" height = "20" /></a>
+[![license](https://img.shields.io/github/license/zeromq/czmq.svg)](https://github.com/zeromq/czmq/blob/master/LICENSE)
+
 # CZMQ - High-level C binding for 0MQ
 
-[![Build Status](https://travis-ci.org/zeromq/czmq.png?branch=master)](https://travis-ci.org/zeromq/czmq)
+| Linux & MacOSX | Windows  |
+|:--------------:|:--------:|
+|[![Build Status](https://travis-ci.org/zeromq/czmq.png?branch=master)](https://travis-ci.org/zeromq/czmq)|[![Build status](https://ci.appveyor.com/api/projects/status/q7y22juu3pnl5wq6?svg=true)](https://ci.appveyor.com/project/zeromq/czmq)|
 
 ## Contents
 
-.toc
+.toc 3
 
 ## Overview
 
@@ -15,9 +23,11 @@
 
 CZMQ has these goals:
 
-* To wrap the 0MQ core API in semantics that are natural and lead to shorter, more readable applications.
-* To hide the differences between versions of 0MQ, particularly 2.x and 3.x.
+* To wrap the 0MQ core API in semantics that lead to shorter, more readable applications.
+* To hide as far as possible the differences between different versions of 0MQ (2.x, 3.x, 4.x).
 * To provide a space for development of more sophisticated API semantics.
+* To wrap the 0MQ security features with high-level tools and APIs.
+* To become the basis for other language bindings built on top of CZMQ.
 
 CZMQ grew out of concepts developed in [ØMQ - The Guide](http://zguide.zeromq.org).
 
@@ -49,25 +59,9 @@ CZMQ grew out of concepts developed in [ØMQ - The Guide](http://zguide.zeromq.o
 
 [/diagram]
 
-### Highlights
-
-* Single API hides differences between 0MQ/2.x, and 0MQ/3.x.
-* Work with messages as strings, individual frames, or multipart messages.
-* Automatic closure of any open sockets at context termination.
-* Automatic LINGER configuration of all sockets for context termination.
-* Portable API for creating child threads and 0MQ pipes to talk to them.
-* Simple reactor with one-off and repeated timers, and socket readers.
-* System clock functions for sleeping and calculating timers.
-* Easy API to get/set all socket options.
-* Portable to Linux, UNIX, OS X, Windows (porting is not yet complete).
-* Includes generic hash and list containers.
-* Full self tests on all classes.
-
 ### Ownership and License
 
-CZMQ's contributors are listed in the AUTHORS file. It is held by the ZeroMQ organization at github.com. The authors of CZMQ grant you use of this software under the terms of the GNU Lesser General Public License (LGPL). For details see the files `COPYING` and `COPYING.LESSER` in this directory.
-
-### Contributing
+The contributors are listed in AUTHORS. This project uses the MPL v2 license, see LICENSE.
 
 CZMQ uses the [C4.1 (Collective Code Construction Contract)](http://rfc.zeromq.org/spec:22) process for contributions.
 
@@ -79,175 +73,355 @@ To report an issue, use the [CZMQ issue tracker](https://github.com/zeromq/czmq/
 
 ### Building and Installing
 
-CZMQ uses autotools for packaging. To build from git (all example commands are for Linux):
+To start with, you need at least these packages:
+
+* {{git-all}} -- git is how we share code with other people.
+
+* {{build-essential}}, {{libtool}}, {{pkg-config}} - the C compiler and related tools.
+
+* {{autotools-dev}}, {{autoconf}}, {{automake}} - the GNU autoconf makefile generators.
+
+* {{cmake}} - the CMake makefile generators (an alternative to autoconf).
+
+Plus some others:
+
+* {{uuid-dev}}, {{libpcre3-dev}} - utility libraries.
+
+* {{valgrind}} - a useful tool for checking your code.
+
+* {{pkg-config}} - an optional useful tool to make building with dependencies easier.
+
+Which we install like this (using the Debian-style apt-get package manager):
+
+    sudo apt-get update
+    sudo apt-get install -y \
+        git-all build-essential libtool \
+        pkg-config autotools-dev autoconf automake cmake \
+        uuid-dev libpcre3-dev valgrind
+
+    # only execute this next line if interested in updating the man pages as well (adds to build time):
+    sudo apt-get install -y asciidoc
+
+Here's how to build CZMQ from GitHub (building from packages is very similar, you don't clone a repo but unpack a tarball), including the libzmq (ZeroMQ core) library (NOTE: skip ldconfig on OSX):
+
+    git clone git://github.com/zeromq/libzmq.git
+    cd libzmq
+    ./autogen.sh
+    # do not specify "--with-libsodium" if you prefer to use internal tweetnacl security implementation (recommended for development)
+    ./configure --with-libsodium
+    make check
+    sudo make install
+    sudo ldconfig
+    cd ..
 
     git clone git://github.com/zeromq/czmq.git
     cd czmq
-    sh autogen.sh
-    ./configure
-    make all
+    ./autogen.sh && ./configure && make check
     sudo make install
     sudo ldconfig
+    cd ..
 
-You will need the libtool and autotools packages. On FreeBSD, you may need to specify the default directories for configure:
+In general CZMQ works best with the latest libzmq master. If you already have an older version of libzmq installed on your system, e.g. in /usr/, then you can install libzmq master to your home directory ($HOME/local):
 
-    ./configure --with-libzmq=/usr/local
+    #   Building libzmq in our home directory
+    ./configure --prefix=$HOME/local
 
-After building, you can run the CZMQ selftests:
+And then to build CZMQ against this installation of libzmq:
+
+    export CFLAGS=-I$HOME/local/include
+    export LDFLAGS=-L$HOME/local/lib64
+    export PKG_CONFIG_PATH=$HOME/local/lib64/pkgconfig
+    ./configure
+
+NOTE: the PKG_CONFIG_PATH is not mandatory, and the actual directory might be different. If you cannot or do not want to use pkg-config, please make sure to MANUALLY add all the necessary CFLAGS and LDFLAGS from all dependencies (for example -DZMQ_BUILD_DRAFT_API=1 if you want the DRAFT APIs).
+
+You will need the pkg-config, libtool, and autoreconf packages. After building, run the CZMQ selftests:
 
     make check
+
+
+### Building on Windows
+
+To start with, you need MS Visual Studio (C/C++). The free community edition works well.
+
+Then, install git, and make sure it works from a DevStudio command prompt:
+
+```
+git
+```
+
+Now let's build CZMQ from GitHub:
+
+```
+    git clone --depth 1 -b stable https://github.com/jedisct1/libsodium.git
+    cd libsodium\builds\msvc\build
+    buildall.bat
+    cd ..\..\..\..
+
+    :: if libsodium is on disk, the Windows build of libzmq will automatically use it
+    git clone git://github.com/zeromq/libzmq.git
+    cd libzmq\builds\msvc
+    configure.bat
+    cd build
+    buildall.bat
+    cd ..\..\..\..
+
+    git clone git://github.com/zeromq/czmq.git
+    cd czmq\builds\msvc
+    configure.bat
+    cd build
+    buildall.bat
+    cd ..\..\..\..
+```
+
+Let's test by running `czmq_selftest`:
+
+```
+   czmq>dir/s/b czmq_selftest.exe
+   czmq\builds\msvc\vs2013\DebugDEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\DebugLEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\DebugSEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\ReleaseDEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\ReleaseLEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\ReleaseSEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\DebugDEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\DebugLEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\DebugSEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\ReleaseDEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\ReleaseLEXE\czmq_selftest.exe
+   czmq\builds\msvc\vs2013\x64\ReleaseSEXE\czmq_selftest.exe
+
+    :: select your choice and run it
+    czmq\builds\msvc\vs2013\x64\ReleaseDEXE\czmq_selftest.exe
+```
 
 ### Linking with an Application
 
 Include `czmq.h` in your application and link with libczmq. Here is a typical gcc link command:
 
-    gcc -lczmq -lzmq myapp.c -o myapp
-
-### API Summary
-
-#### zctx - working with 0MQ contexts
-
-.pull src/zctx.c@header,left
-
-This is the class interface:
-
-.pull include/zctx.h@interface,code
-
-.pull src/zctx.c@discuss,left
-
-#### zsocket - working with 0MQ sockets
-
-.pull src/zsocket.c@header,left
-
-This is the class interface:
-
-.pull include/zsocket.h@interface,code
-
-.pull src/zsocket.c@discuss,left
-
-#### zsockopt - working with 0MQ socket options
-
-.pull src/zsockopt.c@header,left
-
-This is the class interface:
-
-.pull include/zsockopt.h@interface,code
-
-.pull src/zsockopt.c@discuss,left
-
-#### zstr - sending and receiving strings
-
-.pull src/zstr.c@header,left
-
-[diagram]
-
-           Memory                       Wire
-           +-------------+---+          +---+-------------+
-    Send   | S t r i n g | 0 |  ---->   | 6 | S t r i n g |
-           +-------------+---+          +---+-------------+
-
-           Wire                         Heap
-           +---+-------------+          +-------------+---+
-    Recv   | 6 | S t r i n g |  ---->   | S t r i n g | 0 |
-           +---+-------------+          +-------------+---+
-
-[/diagram]
-
-This is the class interface:
-
-.pull include/zstr.h@interface,code
-
-.pull src/zstr.c@discuss,left
-
-#### zfile - work with files
-
-.pull src/zfile.c@header,left
-
-This is the class interface:
-
-.pull include/zfile.h@interface,code
-
-.pull src/zfile.c@discuss,left
-
-#### zframe - working with single message frames
-
-.pull src/zframe.c@header,left
-
-This is the class interface:
-
-.pull include/zframe.h@interface,code
-
-.pull src/zframe.c@discuss,left
-
-#### zmsg - working with multipart messages
-
-.pull src/zmsg.c@header,left
-
-This is the class interface:
-
-.pull include/zmsg.h@interface,code
-
-.pull src/zmsg.c@discuss,left
-
-#### zloop - event-driven reactor
-
-.pull src/zloop.c@header,left
-
-This is the class interface:
-
-.pull include/zloop.h@interface,code
-
-.pull src/zloop.c@discuss,left
-
-#### zthread - working with system threads
-
-.pull src/zthread.c@header,left
-
-This is the class interface:
-
-.pull include/zthread.h@interface,code
-
-.pull src/zthread.c@discuss,left
-
-#### zhash - expandable hash table container
-
-.pull src/zhash.c@header,left
-
-This is the class interface:
-
-.pull include/zhash.h@interface,code
-
-.pull src/zhash.c@discuss,left
-
-#### zlist - singly-linked list container
-
-.pull src/zlist.c@header,left
-
-This is the class interface:
-
-.pull include/zlist.h@interface,code
-
-.pull src/zlist.c@discuss,left
-
-#### zclock - millisecond clocks and delays
-
-.pull src/zclock.c@header,left
-
-This is the class interface:
-
-.pull include/zclock.h@interface,code
-
-.pull src/zclock.c@discuss,left
-
-#### zmutex - wrap lightweight mutexes
-
-.pull src/zmutex.c@header,left
-
-This is the class interface:
-
-.pull include/zmutex.h@interface,code
-
-.pull src/zmutex.c@discuss,left
+    gcc myapp.c -o myapp -lczmq -lzmq
+
+### Use from Other Languages
+
+This is a list of auto-generated bindings:
+
+* https://github.com/zeromq/czmq/tree/master/bindings/jni - Java
+* https://github.com/zeromq/czmq/tree/master/bindings/nodejs - NodeJS
+* https://github.com/zeromq/czmq/tree/master/bindings/python - Python
+* https://github.com/zeromq/czmq/tree/master/bindings/python_cffi - Python (cffi)
+* https://github.com/zeromq/czmq/tree/master/bindings/qml - QML
+* https://github.com/zeromq/czmq/tree/master/bindings/qt - Qt
+* https://github.com/zeromq/czmq/tree/master/bindings/ruby - Ruby (FFI)
+
+This is a list of known higher-level wrappers around CZMQ:
+
+* https://github.com/1100110/CZMQ - D bindings
+* https://github.com/methodmissing/rbczmq - Ruby
+* https://github.com/paddor/cztop - Ruby, based on generated FFI binding
+* https://github.com/zeromq/pyczmq - Python
+* https://github.com/lhope/cl-czmq - Common Lisp
+* https://github.com/fmp88/ocaml-czmq - Ocaml
+* https://github.com/gar1t/erlang-czmq - Erlang
+* https://github.com/mtortonesi/ruby-czmq-ffi - Ruby FFI
+* https://github.com/zeromq/goczmq - Go
+
+### API v3 Summary
+
+This is the API provided by CZMQ v3.x, in alphabetical order.
+
+.pull doc/zactor.doc
+.pull doc/zauth.doc
+.pull doc/zbeacon.doc
+.pull doc/zcert.doc
+.pull doc/zcertstore.doc
+.pull doc/zchunk.doc
+.pull doc/zclock.doc
+.pull doc/zconfig.doc
+.pull doc/zdigest.doc
+.pull doc/zdir.doc
+.pull doc/zdir_patch.doc
+.pull doc/zfile.doc
+.pull doc/zframe.doc
+.pull doc/zgossip.doc
+.pull doc/zhash.doc
+.pull doc/zhashx.doc
+.pull doc/ziflist.doc
+.pull doc/zlist.doc
+.pull doc/zlistx.doc
+.pull doc/zloop.doc
+.pull doc/zmonitor.doc
+.pull doc/zmsg.doc
+.pull doc/zpoller.doc
+.pull doc/zproc.doc
+.pull doc/zproxy.doc
+.pull doc/zrex.doc
+.pull doc/zsock.doc
+.pull doc/zstr.doc
+.pull doc/zsys.doc
+.pull doc/ztimerset.doc
+.pull doc/ztrie.doc
+.pull doc/zuuid.doc
+
+## Error Handling
+
+The CZMQ policy is to reduce the error flow to 0/-1 where possible. libzmq still does a lot of errno setting. CZMQ does not do that, as it creates a fuzzy API. Things either work as expected, or they fail, and the application's best strategy is usually to assert on non-zero return codes.
+
+Some older libraries still return plethora of error codes, to indicate different types of failure. This ironically makes both library and application more likely to be buggy. The reason is simply that it needs more code on both sides of the API, and the more code, the more bugs.
+
+The use of black/white error handling fits the CLASS style for APIs where each call is explicit and without side effects of any kind, and where damage is either impossible, or fatal.
+
+The one exception is running out of resources (memory, sockets). In that case, there are two strategies that work, for different types of app. One is to assert, to force better sizing of the machine and/or limits such as max connections. Two is to degrade carefully, e.g. refuse new connections, however that is considerably harder to do correctly and probably unrealistic for most developers.
+
+Some CZMQ methods used to actually assert, e.g. in zsocket_bind, if the action failed, instead of returning -1. That was just closer to the majority case where the action MUST work, or nothing can continue. However there's a small slice of cases where failure means something positive, and for these cases, such calls return -1 on failure. 99% of calling code simply asserts the return value is not -1.
+
+There are a few cases where the return value is overloaded to return -1, 0, or other values. These are somewhat confusing special cases and we aim to eliminate them over time.
+
+The overall goal with this strategy is robustness, and absolute minimal and predictable expression in the code. You can see that it works: the CZMQ code is generally very simple and clear, with a few exceptions of places where people have used their old C style (we fix these over time).
+
+## CZMQ Actors
+
+The v2 API had a zthread class that let you create "attached threads" connected to their parent by an inproc:// PIPE socket. In v3 this has been simplified and better wrapped as the zactor class. CZMQ actors are in effect threads with a socket interface. A zactor_t instance works like a socket, and the CZMQ classes that deal with sockets (like zmsg and zpoller) all accept zactor_t references as well as zsock_t and libzmq void * socket handles.
+
+To write an actor, use this template. Note that your actor is a single function "void myname (zsock_t *pipe, void *args)" function:
+
+    /*  =========================================================================
+        someclass - some description
+
+        Copyright (c) the Contributors as noted in the AUTHORS file.
+        This file is part of CZMQ, the high-level C binding for 0MQ:
+        http://czmq.zeromq.org.
+
+        This Source Code Form is subject to the terms of the Mozilla Public
+        License, v. 2.0. If a copy of the MPL was not distributed with this
+        file, You can obtain one at http://mozilla.org/MPL/2.0/.
+        =========================================================================
+    */
+
+    /*
+    @header
+        Please take e.g. include/zmonitor.h as basis for your public API.
+        And delete this text, and write your own, when you create an actor :-)
+    @discuss
+
+    @end
+    */
+
+    #include "../include/czmq.h"
+
+    //  --------------------------------------------------------------------------
+    //  The self_t structure holds the state for one actor instance
+
+    typedef struct {
+        zsock_t *pipe;              //  Actor command pipe
+        zpoller_t *poller;          //  Socket poller
+        //  ... you'll be adding other stuff here
+        bool terminated;            //  Did caller ask us to quit?
+        bool verbose;               //  Verbose logging enabled?
+    } self_t;
+
+    static self_t *
+    s_self_new (zsock_t *pipe)
+    {
+        self_t *self = (self_t *) zmalloc (sizeof (self_t));
+        self->pipe = pipe;
+        //  ... initialize your own state including any other
+        //  sockets, which you can add to the poller:
+        self->poller = zpoller_new (self->pipe, NULL);
+        return self;
+    }
+
+    static void
+    s_self_destroy (self_t **self_p)
+    {
+        assert (self_p);
+        if (*self_p) {
+            self_t *self = *self_p;
+            zpoller_destroy (&self->poller);
+            //  ... destroy your own state here
+            free (self);
+            *self_p = NULL;
+        }
+    }
+
+
+    //  --------------------------------------------------------------------------
+    //  Handle a command from calling application
+
+    static int
+    s_self_handle_pipe (self_t *self)
+    {
+        //  Get the whole message off the pipe in one go
+        zmsg_t *request = zmsg_recv (self->pipe);
+        if (!request)
+            return -1;                  //  Interrupted
+
+        char *command = zmsg_popstr (request);
+        if (self->verbose)
+            zsys_info ("zxxx: API command=%s", command);
+        if (streq (command, "VERBOSE"))
+            self->verbose = true;
+        else
+        //  An example of a command that the caller would wait for
+        //  via a signal, so that the two threads synchronize
+        if (streq (command, "WAIT"))
+            zsock_signal (self->pipe, 0);
+        else
+        if (streq (command, "$TERM"))
+            self->terminated = true;
+        else {
+            zsys_error ("zxxx: - invalid command: %s", command);
+            assert (false);
+        }
+        zstr_free (&command);
+        zmsg_destroy (&request);
+        return 0;
+    }
+
+
+    //  --------------------------------------------------------------------------
+    //  zxxx() implements the zxxx actor interface
+
+    void
+    zxxx (zsock_t *pipe, void *args)
+    {
+        self_t *self = s_self_new (pipe);
+        //  Signal successful initialization
+        zsock_signal (pipe, 0);
+
+        while (!self->terminated) {
+            zsock_t *which = (zsock_t *) zpoller_wait (self->poller, -1);
+            if (which == self->pipe)
+                s_self_handle_pipe (self);
+            else
+            if (zpoller_terminated (self->poller))
+                break;          //  Interrupted
+        }
+        s_self_destroy (&self);
+    }
+
+
+    //  --------------------------------------------------------------------------
+    //  Selftest
+
+    void
+    zxxx_test (bool verbose)
+    {
+        printf (" * zxxx: ");
+        if (verbose)
+            printf ("\n");
+
+        //  @selftest
+        zactor_t *xxx = zactor_new (zxxx, NULL);
+        assert (xxx);
+        if (verbose)
+            zstr_sendx (xxx, "VERBOSE", NULL);
+
+        zactor_destroy (&xxx);
+        //  @end
+        printf ("OK\n");
+    }
+
+The selftest code shows how to create, talk to, and destroy an actor.
 
 ## Under the Hood
 
@@ -259,7 +433,8 @@ If you define a new CZMQ class `myclass` you need to:
 * Add`#include <zmyclass.h>` to `include/czmq.h`.
 * Add the myclass header and test call to `src/czmq_selftest.c`.
 * Add a reference documentation to 'doc/zmyclass.txt'.
-* Add myclass to 'src/Makefile.am` and `doc/Makefile.am`.
+* Add myclass to 'model/projects.xml` and read model/README.txt.
+* Add a section to README.txt.
 
 ### Documentation
 
@@ -318,9 +493,19 @@ Before attempting to patch code for portability, please read the `czmq_prelude.h
 * Defining macros that rename exotic library functions to more conventional names: do this in czmq_prelude.h.
 * Reimplementing specific methods to use a non-standard API: this is typically needed on Windows. Do this in the relevant class, using #ifdefs to properly differentiate code for different platforms.
 
+### Hints to Contributors
+
+CZMQ is a nice, neat library, and you may not immediately appreciate why. Read the CLASS style guide please, and write your code to make it indistinguishable from the rest of the code in the library. That is the only real criteria for good style: it's invisible.
+
+Don't include system headers in source files. The right place for these is czmq_prelude.h. If you need to check against configured libraries and/or headers, include platform.h in the source before including czmq.h.
+
+Do read your code after you write it and ask, "Can I make this simpler?" We do use a nice minimalist and yet readable style. Learn it, adopt it, use it.
+
+Before opening a pull request read our [contribution guidelines](https://github.com/zeromq/czmq/blob/master/CONTRIBUTING.md). Thanks!
+
 ### Code Generation
 
-We generate the zsockopt class using [https://github.com/imatix/gsl GSL].
+We generate the zsockopt class using [GSL](https://github.com/imatix/gsl), using a code generator script in scripts/sockopts.gsl. We also generate the project files.
 
 ### This Document
 

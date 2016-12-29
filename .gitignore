@@ -1,52 +1,119 @@
-INSTALL
+save.xml
+# Object files
+*.o
+*.so
+*.ko
+*.pyc
+
+# Libraries
+*.lib
+*.a
+*.la
+*.pc
+*.dll.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so.*
+*.dylib
+*.lo
+
+# Executables
+src/czmq_selftest
+src/zmakecert
+src/czmq_selftest
+*.exe
+*.out
+*.app
+core
+
+ # Distcheck workspace and archives
+czmq-4.0.2/
+czmq-4.0.2.tar.gz
+czmq-4.0.2.zip
+
+# Man pages
+doc/*.1
+doc/*.3
+doc/*.7
+
+# autoconf files
+.deps
+.libs
+*.log
+*.trs
 Makefile
 Makefile.in
+!builds/openwrt/Makefile
 aclocal.m4
 autom4te.cache/
 config.log
 config.status
 config/
 configure
-doc/Makefile
-doc/Makefile.in
 libtool
-src/.deps/
-src/Makefile
-src/Makefile.in
-src/libczmq.pc
-src/platform.hpp
-src/platform.hpp.in
-src/platform.hpp.in~
-src/stamp-h1
-src/*.o
-src/mtrace.txt
-src/outbin
-src/czmq_selftest
-doc/*.3
-doc/*.7
-doc/*.xml
-src/.libs/
-src/czmq.la
 src/platform.h
 src/platform.h.in
 src/platform.h.in~
-src/*.lo
-src/malloc.txt
-examples/*.o
-examples/zdevice
-examples/.deps/
-examples/.libs/
-examples/core
-src/core
-ipr
-*.gz
-*.zip
-*.la
-win32/czmq.ncb
-win32/czmq.vcproj.WS200902.user.user
-win32/czmq_selftest.exe.embed.manifest
-win32/czmq_selftest.exe.embed.manifest.res
-win32/czmq_selftest.exe.intermediate.manifest
-win32/czmq_selftest.vcproj.WS200902.user.user
-builds/mingw32/*.o
+src/stamp-h1
+src/test-suite.log
+src/.dirstamp
 
+# CMake cache
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+DartConfiguration.tcl
+install_manifest.txt
+Testing/
+
+# Repositories downloaded by CI integration scripts
+*.git/
+
+# Travis build area
+tmp/
+
+# Valgrind files
+callgrind*
+vgcore*
+
+# GYP files
+project.Makefile
+*.target.mk
+out/
+
+# Android build results
+builds/android/prefix
+
+# Android - generated directories
+src/app/bin/
+src/app/gen/
+src/app/obj/
+src/app/local.properties
+
+# Android -dependencies
+src/app/jni/output
+
+# Python build directory
+build/
+
+# MSVC build directories
+obj/
+bin/
+*.tlog
+
+# Qt
+*pro.user
+moc_*
+build-*
+bindings/qt/selftest/selftest
+
+# Temporary files
+*.swp
+*.bak
+.test*
+
+# editor backups
+*~
